@@ -122,7 +122,8 @@ def decreasing_p_large_time(run_3k, itr):
                     
                     else:
                         if A.t == 31 * A.pace_rate: # fraction of resting cells at the last beat
-                            resting_cells_at_last_beat = float(len(A.resting[A.resting == True]))
+                            resting_cells_at_last_beat = int(len(A.resting[A.resting == True]))
+                            print('here')
      
                         if len(A.states[0]) != 0:   # continues to propagate
                             
@@ -140,6 +141,7 @@ def decreasing_p_large_time(run_3k, itr):
                                 
                             if i == 4 and A.t % 400 == 0 and A.t > 5000 and A.p_nonfire > 0.05:
                                 A.p_nonfire -= 0.01
+
                         
                             A.cmp_no_sinus()
                             
@@ -152,7 +154,7 @@ def decreasing_p_large_time(run_3k, itr):
                             A.time_extinguished = A.t
                             A.stop = True
                             
-                            Fraction_of_resting_cells_last_timestep = len(A.resting[A.resting == True])
+                            Fraction_of_resting_cells_last_timestep = int(len(A.resting[A.resting == True]))
         
                             
                 else:
@@ -161,20 +163,31 @@ def decreasing_p_large_time(run_3k, itr):
                     A.time_extinguished = A.t
                     A.stop = True
         
-                    Fraction_of_resting_cells_last_timestep = len(A.resting[A.resting == True])
+                    Fraction_of_resting_cells_last_timestep = int(len(A.resting[A.resting == True]))
                     
             
             if A.t_AF > 0:
                 A.AF = True
             
             if len(A.resting_cells_over_time) > 0:     ### Want to ignore last 200 values
+
+                resting_cells_minus_slice = np.array(A.resting_cells_over_time[:-200])
             
-                avg_resting = np.mean(A.resting_cells_over_time)    
-                std_resting = np.std(A.resting_cells_over_time)
-                med_resting = np.median(A.resting_cells_over_time)
-                max_resting = max(A.resting_cells_over_time)
-                min_resting = min(A.resting_cells_over_time)
-                                
+                avg_resting = np.mean(resting_cells_minus_slice)    
+                std_resting = np.std(resting_cells_minus_slice)
+                med_resting = np.median(resting_cells_minus_slice)
+                max_resting = max(resting_cells_minus_slice)
+                min_resting = min(resting_cells_minus_slice)
+                
+                position_of_min_slice = np.where(resting_cells_minus_slice == min(resting_cells_minus_slice))[0][0] + AF_start # time of min
+                position_of_max_slice = np.where(resting_cells_minus_slice == max(resting_cells_minus_slice))[0][0] + AF_start # time of max
+                position_of_min = np.where(np.array(A.resting_cells_over_time) == min(A.resting_cells_over_time))[0][-1] + AF_start # time of min
+                position_of_max = np.where(np.array(A.resting_cells_over_time) == max(A.resting_cells_over_time))[0][-1] + AF_start
+                
+            num_readings = int(np.floor((A.time_extinguished - AF_start)/5000.)) 
+            time_splits = np.array_split(A.resting_cells_over_time[-(num_readings * 5000):], num_readings)
+            mov_sum = np.array(list(map(sum, time_splits)), dtype = int)
+            
                 # nu
                 # tau
                 # p
@@ -199,29 +212,22 @@ def decreasing_p_large_time(run_3k, itr):
         #     position of min
         #     position of max
             
-            last_500_resting = []
-            
-            if len(A.resting_cells_over_time) > 500:
-                last_500_resting = A.resting_cells_over_time[-500:]
-                
-            else:
-                last_500_resting = A.resting_cells_over_time
-        
-            data = np.array([nu*100, tau, p*100,     # 0, 1, 2
+
+            data = np.array([nu*100, tau, p*100,    #[0] # 0, 1, 2
                              A.seed_connections, A.seed_prop,       # 3, 4
                              A.fail_safe, A.AF, A.t_AF, A.time_extinguished, AF_start,   # 5, 6, 7, 8, 9
                              avg_resting, std_resting, med_resting, min_resting, max_resting,   # 10, 11, 12, 13, 14
-                             resting_cells_at_last_beat, Fraction_of_resting_cells_last_timestep], dtype = int)   # 15, 16    # 17, 18
+                             resting_cells_at_last_beat, Fraction_of_resting_cells_last_timestep,   # 15, 16
+                             position_of_min_slice, position_of_max_slice, position_of_min, position_of_max], dtype = int)    # 17, 18, 19, 20
         
-            data = np.append(data, last_500_resting)        # [19:]
+            data = np.array([data, regular_resting_list, mov_sum])        # [1] resting cells at p changes, [2] sum every 5000
 
-#            print(len(data))
         
-            full_data.append(data)
+            full_data.extend([data])
         
-        two_params_data.append(full_data)
+        two_params_data.extend([full_data])
        
-    two_params_data = np.array(two_params_data, dtype = int)
+    two_params_data = np.array(two_params_data)
     
     np.save('long_run_decrease_p_' + str(itr) + '.npy', two_params_data)
  
