@@ -10,7 +10,7 @@ import numpy as np
 import Atrium_Final as AF
 import sys
 
-job_number = int(sys.argv[1])
+#job_number = int(sys.argv[1])
 #
 #
 #full_data = []
@@ -18,14 +18,33 @@ job_number = int(sys.argv[1])
 #for i in range(832):
 #    full_data.append(np.load('PhaseData/onesr_data_' + str(i) + '.npy'))
 #    
-#print(full_data[300][2][0])
-    
-#print(full_data[344][6][0][7])    ### 7th value is if it hits fail safe
+##print(full_data[300][2][0])
+#    
+##print(full_data[344][6][0][7])    ### 7th value is if it hits fail safe
+#
+#hit_failsafe_low_p = []
+#
+#run_values = []
+#
+#for i in range(len(full_data)):
+#    for j in range(len(full_data[i])):
+#            for k in range(len(full_data[i][j])):
+#                data = full_data[i][j][k]
+#                
+#                if data[6] == True and data[2] <= 15:
+#                    valid_data = [round(data[0])/100, round(data[1]), round(data[2])/100, round(data[4]), round(data[5])]
+#                    
+#                    hit_failsafe_low_p.append(valid_data)
+#
+#         
+#for i in range(0, len(hit_failsafe_low_p)-30, int(np.floor(len(hit_failsafe_low_p)/10000))):
+#    run_values.append(hit_failsafe_low_p[i])
+#    
+#np.save('run_values.npy', run_values)
+#
+
 
 #data_num = 0
-#
-#run_3k = []
-#
 #while data_num < 2000:
 #    
 #    p_rand = np.random.randint(1, 10) # Vals from 0.01 to 0.09
@@ -47,9 +66,11 @@ def decreasing_p_large_time(run_3k, itr):
     
     two_params_data = []
     
-    for k in range(2):       # 2 Param sets per job
+    for k in range(11):       # 2 Param sets per job
+        print('k: ', k)
+        print('val: ', (11 * itr) + k)
 
-        params = run_3k[(2 * itr) + k]          # Itr k does k = 2 * itr and k + 1
+        params = run_3k[(11 * itr) + k]          # Itr k does k = 2 * itr and k + 1
         
         nu = params[0]
         tau = int(params[1])
@@ -61,22 +82,20 @@ def decreasing_p_large_time(run_3k, itr):
         
         full_data = []
                
-        for i in range(2):       # i == 0 is decreasing p, i == 1 is constant p
-            print(i)
+        for i in range(6):       # i == 0 is decreasing p, i == 1 is constant p
+            print('i: ', i)
         
             avg_resting = None
             std_resting = None
             med_resting = None
             max_resting = None
             min_resting = None
-            position_of_min = None
-            position_of_max = None
             Fraction_of_resting_cells_last_timestep = None
             
             regular_resting_list = []
                     
             A = AF.SourceSinkModel(hexagonal=True, threshold=1, p_nonfire=p, pace_rate=pace,
-                                   Lx=70, Ly=100, tot_time=500000, nu_para=nu, nu_trans=nu, rp=tau,
+                                   Lx=70, Ly=100, tot_time=5000, nu_para=nu, nu_trans=nu, rp=tau,
                                    seed_connections=seed1, seed_prop=seed2, 
                                    charge_conservation = False, t_under = 1, t_under_on = False)
         
@@ -107,12 +126,20 @@ def decreasing_p_large_time(run_3k, itr):
      
                         if len(A.states[0]) != 0:   # continues to propagate
                             
-                            if i == 0 and A.t % 2000 == 0 and A.t > 15000 and A.p_nonfire > 0.0006:
-                                A.p_nonfire -= 0.0003
+                            if i == 0 and A.t % 400 == 0 and A.t > 5000 and A.p_nonfire > 0.01:
+                                A.p_nonfire -= 0.01
+                            
+                            if i == 1 and A.t % 400 == 0 and A.t > 5000 and A.p_nonfire > 0.02:
+                                A.p_nonfire -= 0.01
                                 
-                            if A.t % 2000 == 0:
-                                regular_resting_cells = float(len(A.resting[A.resting == True]))
-                                regular_resting_list.append(regular_resting_cells)
+                            if i == 2 and A.t % 400 == 0 and A.t > 5000 and A.p_nonfire > 0.03:
+                                A.p_nonfire -= 0.01
+                                
+                            if i == 3 and A.t % 400 == 0 and A.t > 5000 and A.p_nonfire > 0.04:
+                                A.p_nonfire -= 0.01
+                                
+                            if i == 4 and A.t % 400 == 0 and A.t > 5000 and A.p_nonfire > 0.05:
+                                A.p_nonfire -= 0.01
                         
                             A.cmp_no_sinus()
                             
@@ -140,19 +167,14 @@ def decreasing_p_large_time(run_3k, itr):
             if A.t_AF > 0:
                 A.AF = True
             
-            if len(A.resting_cells_over_time) > 200:     ### Want to ignore last 200 values
+            if len(A.resting_cells_over_time) > 0:     ### Want to ignore last 200 values
             
-                resting_cells_minus_slice = np.array(A.resting_cells_over_time[:-200])
-            
-                avg_resting = np.mean(resting_cells_minus_slice)    
-                std_resting = np.std(resting_cells_minus_slice)
-                med_resting = np.median(resting_cells_minus_slice)
-                max_resting = max(resting_cells_minus_slice)
-                min_resting = min(resting_cells_minus_slice)
-                
-                position_of_min = np.where(resting_cells_minus_slice == min(resting_cells_minus_slice))[0][0] + AF_start # time of min
-                position_of_max = np.where(resting_cells_minus_slice == max(resting_cells_minus_slice))[0][0] + AF_start # time of max
-                
+                avg_resting = np.mean(A.resting_cells_over_time)    
+                std_resting = np.std(A.resting_cells_over_time)
+                med_resting = np.median(A.resting_cells_over_time)
+                max_resting = max(A.resting_cells_over_time)
+                min_resting = min(A.resting_cells_over_time)
+                                
                 # nu
                 # tau
                 # p
@@ -177,16 +199,23 @@ def decreasing_p_large_time(run_3k, itr):
         #     position of min
         #     position of max
             
+            last_500_resting = []
+            
+            if len(A.resting_cells_over_time) > 500:
+                last_500_resting = A.resting_cells_over_time[-500:]
+                
+            else:
+                last_500_resting = A.resting_cells_over_time
+        
             data = np.array([nu*100, tau, p*100,     # 0, 1, 2
                              A.seed_connections, A.seed_prop,       # 3, 4
                              A.fail_safe, A.AF, A.t_AF, A.time_extinguished, AF_start,   # 5, 6, 7, 8, 9
                              avg_resting, std_resting, med_resting, min_resting, max_resting,   # 10, 11, 12, 13, 14
-                             resting_cells_at_last_beat, Fraction_of_resting_cells_last_timestep,   # 15, 16
-                             position_of_min, position_of_max], dtype = int)    # 17, 18
+                             resting_cells_at_last_beat, Fraction_of_resting_cells_last_timestep], dtype = int)   # 15, 16    # 17, 18
         
-            data = np.append(data, regular_resting_list)        # [19:]
+            data = np.append(data, last_500_resting)        # [19:]
 
-            print(len(data))
+#            print(len(data))
         
             full_data.append(data)
         
@@ -197,8 +226,8 @@ def decreasing_p_large_time(run_3k, itr):
     np.save('long_run_decrease_p_' + str(itr) + '.npy', two_params_data)
  
 #    
-run_3k = np.load('run_3k.npy')
-decreasing_p_large_time(run_3k, job_number)
+params_data = np.load('run_values.npy')
+decreasing_p_large_time(params_data, 929)
 
 #
 #for i in range(50):

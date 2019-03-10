@@ -35,14 +35,14 @@ resting_cells = False
 
 number_of_beats = 31
 
-nu = 0.66
-tau = 76
-p = 0.07
-seed1 = 53517399
-seed2 = 543500048
+nu = 0.55
+tau = 30
+p = 0.1
+seed1 = 231543
+seed2 = 786965
 
-A = AC.SourceSinkModel(hexagonal=True, threshold=1, p_nonfire=p, pace_rate=tau + 2,
-                       Lx=70, Ly=100, tot_time= 50000, nu_para=nu, nu_trans=nu, rp=tau,
+A = AC.SourceSinkModel(hexagonal=True, threshold=1, p_nonfire=p, pace_rate=110,
+                       Lx=70, Ly=100, tot_time= 5000, nu_para=nu, nu_trans=nu, rp=tau,
                        seed_connections=seed1, seed_prop=seed2, boundary = True, 
                        t_under = 1, t_under_on = False)
 
@@ -56,10 +56,10 @@ np.random.seed(A.seed_prop)
 
 def update_hex(frame_number, collection, A, convolve):    # Frame number passed as default so needed
     """Next frame update for animation without ECG"""
-
-    if A.t < number_of_beats * A.pace_rate:
-        A.pacing_with_change_of_rp_ani(time_between_pace_and_change_of_rp = 0,
-                                 increment = -1)
+#
+#    if A.t < number_of_beats * A.pace_rate:
+#        A.pacing_with_change_of_rp_ani(time_between_pace_and_change_of_rp = 0,
+#                                 increment = -1)
 
     ### Change rp at end of pacing ###
 #    elif A.t == (number_of_beats * A.pace_rate) + 2:
@@ -67,11 +67,12 @@ def update_hex(frame_number, collection, A, convolve):    # Frame number passed 
 #        A.cmp_animation()
 #        print(A.rp)
 #   
-    else:
+#    else:
 #        if A.t + 1 % 1000 == 0:
 #            A.p_nonfire -= 0.002
         
-        A.cmp_animation()
+    A.sinus_rhythm()
+    A.cmp_animation()
 #    A.find_propagation_time()
 
     #print(len(A.states))
@@ -263,7 +264,7 @@ if A.hexagonal:
 ###SAVING VIDEO###
 
 
-#ani.save('(Video 5) Pacing then increase rp and increase p slowly.mp4', fps=30)
+ani.save('Meandering - p constant - no pacing - human.mp4', fps=30)
 
 
 #file_path = "NewVid.mp4"
